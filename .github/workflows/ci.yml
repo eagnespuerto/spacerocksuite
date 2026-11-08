@@ -10,7 +10,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, ubuntu-24.04-arm]
+        # Ubuntu 24.04 pinned: ubuntu-latest (26.04) has no Python 3.9, which Pi OS Bullseye still uses
+        os: [ubuntu-24.04, windows-latest, ubuntu-24.04-arm]
         python: ["3.9", "3.12"]
     runs-on: ${{ matrix.os }}
     steps:
