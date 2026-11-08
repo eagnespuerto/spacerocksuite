@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spacerocksuite"
+dynamic = ["version"]
+description = "Precovery toolkit for small bodies: Find_Orb, JPL Scout and Horizons, Ephemeral, plate-archive search, stacking and stamp grids."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Ella Agnes Puerto" }]
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.21",
+    "astropy>=5.0",
+    "matplotlib>=3.5",
+]
+
+[project.optional-dependencies]
+fast = ["srs_core"]          # Rust core, built from rust/
+scipy = ["scipy>=1.7"]
+dev = ["pytest>=7", "pyinstaller>=6"]
+
+[project.scripts]
+spacerocksuite = "spacerocksuite.cli:main"
+srs = "spacerocksuite.cli:main"
+
+[project.gui-scripts]
+spacerocksuite-gui = "spacerocksuite.gui.app:main"
+
+[project.urls]
+Homepage = "https://github.com/eagnespuerto/spacerocksuite"
+
+[tool.setuptools.dynamic]
+version = { attr = "spacerocksuite.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["spacerocksuite*"]
+
+[tool.setuptools.package-data]
+"spacerocksuite.data" = ["*.json", "*.png"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["network: needs internet (deselect with -m 'not network')"]
