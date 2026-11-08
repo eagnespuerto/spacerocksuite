@@ -13,35 +13,44 @@ permissions:
 
 jobs:
   core-wheels:
-    name: srs_core ${{ matrix.target }}
+    name: srs_core ${{ matrix.tag }}
     strategy:
-      fail-fast: false          # one flaky download should not cancel the other targets
+      fail-fast: false          # one flaky build should not cancel the other targets
       matrix:
         include:
           - os: windows-latest
-            target: x64
+            triple: x86_64-pc-windows-msvc
             tag: windows
+            zig: ""
           - os: ubuntu-latest
-            target: x86_64
+            triple: x86_64-unknown-linux-gnu
             tag: linux-x86_64
+            zig: "--zig --compatibility manylinux2014"
           - os: ubuntu-latest
-            target: aarch64
+            triple: aarch64-unknown-linux-gnu
             tag: linux-arm64
+            zig: "--zig --compatibility manylinux2014"
           - os: ubuntu-latest
-            target: armv7
+            triple: armv7-unknown-linux-gnueabihf
             tag: linux-armv7
+            zig: "--zig --compatibility manylinux2014"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - uses: PyO3/maturin-action@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          working-directory: rust
-          target: ${{ matrix.target }}
-          args: --release --out ../wheelhouse
-          manylinux: "2014"
+          targets: ${{ matrix.triple }}
+      # Cross-compile on the runner with zig (no Docker), still manylinux2014,
+      # so the wheels load on older glibc such as Raspberry Pi OS Bullseye.
+      - name: Build wheel
+        working-directory: rust
+        shell: bash
+        run: |
+          pip install "maturin>=1.6,<2" ziglang
+          maturin build --release --target ${{ matrix.triple }} ${{ matrix.zig }} -i python -o ../wheelhouse
       - uses: actions/upload-artifact@v4
         with:
           name: core-${{ matrix.tag }}
