@@ -15,6 +15,7 @@ jobs:
   core-wheels:
     name: srs_core ${{ matrix.target }}
     strategy:
+      fail-fast: false          # one flaky download should not cancel the other targets
       matrix:
         include:
           - os: windows-latest
