@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use SpaceRockSuite, please cite it as below."
+title: "SpaceRockSuite: a precovery toolkit for asteroids, comets and TNOs"
+type: software
+authors:
+  - family-names: Puerto
+    given-names: Ella Agnes
+    orcid: "https://orcid.org/0009-0005-1624-2025"
+    affiliation: "Independent Researcher, Manila, Philippines"
+version: 0.0.1
+date-released: 2026-11-08
+doi: 10.5281/zenodo.24052319
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.24052319
+    description: Concept DOI (all versions)
+  - type: doi
+    value: 10.5281/zenodo.24052320
+    description: Version 0.0.1
+repository-code: "https://github.com/eagnespuerto/spacerocksuite"
+license: MIT
+keywords:
+  - precovery
+  - asteroids
+  - comets
+  - trans-Neptunian objects
+  - photographic plates
+  - astrometry
