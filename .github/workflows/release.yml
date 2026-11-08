@@ -17,10 +17,18 @@ jobs:
     strategy:
       matrix:
         include:
-          - { os: windows-latest, target: x64, tag: windows }
-          - { os: ubuntu-latest, target: x86_64, tag: linux-x86_64 }
-          - { os: ubuntu-latest, target: aarch64, tag: linux-arm64 }
-          - { os: ubuntu-latest, target: armv7, tag: linux-armv7 }
+          - os: windows-latest
+            target: x64
+            tag: windows
+          - os: ubuntu-latest
+            target: x86_64
+            tag: linux-x86_64
+          - os: ubuntu-latest
+            target: aarch64
+            tag: linux-arm64
+          - os: ubuntu-latest
+            target: armv7
+            tag: linux-armv7
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -69,9 +77,13 @@ jobs:
         with:
           python-version: "3.12"
       - uses: actions/download-artifact@v4
-        with: { name: core-windows, path: wheelhouse }
+        with:
+          name: core-windows
+          path: wheelhouse
       - uses: actions/download-artifact@v4
-        with: { name: py-wheel, path: wheelhouse }
+        with:
+          name: py-wheel
+          path: wheelhouse
       - name: Install app + PyInstaller
         run: |
           python -m pip install --upgrade pip
@@ -102,9 +114,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
-        with: { name: core-${{ matrix.tag }}, path: b }
+        with:
+          name: core-${{ matrix.tag }}
+          path: b
       - uses: actions/download-artifact@v4
-        with: { name: py-wheel, path: b }
+        with:
+          name: py-wheel
+          path: b
       - name: Bundle
         run: |
           V=${{ needs.py-wheel.outputs.version }}
@@ -125,7 +141,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
-        with: { path: out, merge-multiple: true }
+        with:
+          path: out
+          merge-multiple: true
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
