@@ -7,6 +7,7 @@
 [![Rust core](https://img.shields.io/badge/core-Rust%20%2B%20PyO3-dea584?logo=rust&logoColor=white)](rust/)
 [![GUI: Tkinter](https://img.shields.io/badge/GUI-Tkinter-9be15d)](spacerocksuite/gui/app.py)
 [![Ephemeral](https://img.shields.io/badge/works%20with-Ephemeral-ffb347)](https://eagnespuerto.github.io/ephemeral/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24052319.svg)](https://doi.org/10.5281/zenodo.24052319)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 **A desktop app for precovery of asteroids, comets and TNOs.** Give it an object. It gets the orbit and its uncertainty, finds old plates and survey frames that should contain the object, cuts stamps at the predicted position, and makes a stamp grid. It runs on Windows, Linux and Raspberry Pi OS, and it is light enough for a Pi 3B+.
@@ -169,6 +170,12 @@ rust/           srs_core (PyO3): Kepler solver, shift-stack, filters
 packaging/      PyInstaller spec, Inno Setup script, Linux/Pi install.sh, icon
 tests/          offline tests; both backends must agree
 ```
+
+## How to cite
+
+Puerto, E. A. (2026). *SpaceRockSuite: a precovery toolkit for asteroids, comets and TNOs* (Version 0.0.1) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.24052320
+
+To cite all versions, use the concept DOI [10.5281/zenodo.24052319](https://doi.org/10.5281/zenodo.24052319). GitHub's "Cite this repository" button reads [CITATION.cff](CITATION.cff).
 
 ## Credits
 
