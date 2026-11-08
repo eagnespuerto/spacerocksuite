@@ -1,0 +1,25 @@
+[package]
+name = "srs_core"
+version = "0.0.1"
+edition = "2021"
+description = "Native kernels for SpaceRockSuite: two-body orbits, shift-stacking, filters"
+license = "MIT"
+repository = "https://github.com/eagnespuerto/spacerocksuite"
+
+[features]
+default = ["parallel"]
+parallel = ["rayon"]
+
+[dependencies]
+pyo3 = { version = "0.22", features = ["abi3-py39", "extension-module"] }
+numpy = "0.22"
+rayon = { version = "1.10", optional = true }
+
+[lib]
+name = "srs_core"
+crate-type = ["cdylib"]
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+opt-level = 3
