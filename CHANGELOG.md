@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.0.3] - 2026-11-09
 
 - Stack tab: frames that do not contain the predicted position are skipped, each with how far off it is. If none are left, the app says so (with the 3-sigma size and predicted V) instead of printing "flux 0, control noise 0, S/N nan". Aperture photometry on empty stamps now gives NaN, not 0. Same check in `srs stack`.
 
