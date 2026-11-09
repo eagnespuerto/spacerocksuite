@@ -20,9 +20,9 @@
    - **JPL Horizons** (with the 3σ ellipse, quantities 36 and 37);
    - **JPL Scout**, for objects on the NEO Confirmation Page, built from Scout's orbit samples;
    - **Find_Orb**, run locally if you have it, or through Bill Gray's web service, using MPC observations or your own;
-   - **Ephemeral**, which reads any ephemeris you paste in: Horizons, MPC, Find_Orb, 80-column astrometry or a plain table.
+   - **a pasted ephemeris**: copy the table from Find_Orb on projectpluto.com, Horizons or the MPC, or a plain time/RA/Dec table, and paste it in. Find_Orb's sigma, PA and magnitude are kept.
 
-   Any track opens in [Ephemeral](https://eagnespuerto.github.io/ephemeral/) with one click.
+   Beside it, the app draws the track as an orbit seen from above the ecliptic, with the planets' orbits and a two-body orbit through the track. Any track opens in [Ephemeral](https://eagnespuerto.github.io/ephemeral/) with one click.
 2. **Plates.** It searches archives for plates whose field covers the object at that plate's own epoch, within an uncertainty you set from 1σ to 6σ:
    - **SuperCOSMOS**: UKST/SERC, ESO Schmidt, POSS-I and POSS-II, 6,646 plates. This search runs offline from a bundled plate list.
    - **DASCH**: Harvard plates, 1885–1992.
@@ -87,7 +87,7 @@ You can change each value in **Settings**. Heavy loops (two-body propagation of 
 
 The window has four steps, plus Settings:
 
-1. **Target**: type a designation, number, name or NEOCP id; choose Horizons, Scout, Find_Orb or Ephemeral; set the date range; press *Get track*.
+1. **Target**: type the object's name. Then either **A**, look it up online (Horizons for numbered or designated objects, Scout for NEOCP objects, Find_Orb to fit observations) with a date range, or **B**, paste an ephemeris, for example the Find_Orb table from projectpluto.com. Clicking in a section picks it. Press *Get track*; the orbit sketch appears on the right.
 2. **Plates**: set the uncertainty (1–6σ) with the slider, tick the archives you want, then press *Search*. Select rows and press *Stamps of selected* for SuperCOSMOS or DSS. Other archives open their own page.
 3. **Stack**: add FITS frames, choose *track* (shift-stack) or *static*, and set the clean-ups. Null tests are on by default.
 4. **Stamp grid**: grids show up here. *Open stamp_grid.json* re-renders any spec.
@@ -116,12 +116,12 @@ srs grid ed138_stamps/stamp_grid.json
 
 ## Screenshots
 
-| Target | Plates |
+| | |
 |---|---|
-| ![Target tab with a Horizons track for 2026 ED138](docs/screenshots/target.png) | ![Plates tab: SuperCOSMOS and DSS plates for 2026 ED138 at 3 sigma](docs/screenshots/plates.png) |
-| **Target.** A Horizons track for 2026 ED138, 1930–2003, with its 3σ ellipse and predicted V. | **Plates.** Seven plates at 3σ, ranked by limit minus predicted V. |
-| ![Target tab with a Scout track for NEOCP object C1MN9TP](docs/screenshots/target_neocp.png) | ![Plates tab: CADC SSOIS frames for C1MN9TP](docs/screenshots/plates_neocp.png) |
-| **NEOCP object.** C1MN9TP from Scout's 1,000 orbit samples. | **SSOIS frames** for C1MN9TP, searched with Scout's orbit. |
+| ![Target tab: Horizons track for 2026 ED138 with its orbit sketch](docs/screenshots/target.png) | ![Target tab: Find_Orb ephemeris for NEOCP object P12rWvN pasted from projectpluto](docs/screenshots/target_paste.png) |
+| **Target, look-up.** A Horizons track for 2026 ED138, 1930–2003, drawn as an arc of its orbit (a 43.2 au, e 0.14, i 24.4°). | **Target, paste.** A Find_Orb ephemeris for NEOCP object P12rWvN, pasted from projectpluto.com. |
+| ![Plates tab: SuperCOSMOS and DSS plates for 2026 ED138 at 3 sigma](docs/screenshots/plates.png) | ![Plates tab: CADC SSOIS frames for C1MN9TP](docs/screenshots/plates_neocp.png) |
+| **Plates.** Seven plates at 3σ, ranked by limit minus predicted V. | **SSOIS frames** for NEOCP object C1MN9TP, searched with Scout's orbit. |
 | ![Stamp grid tab](docs/screenshots/stamp_grid_tab.png) | ![Settings tab with the device tier](docs/screenshots/settings.png) |
 | **Stamp grid.** Each grid shows its file path and SHA-256. | **Settings.** Defaults come from the device tier. You can change them. |
 
@@ -161,6 +161,7 @@ spacerocksuite/
   archives/     supercosmos.py (offline), dasch.py, ssois.py, dss.py
   imaging/      cleanup.py, stack.py, stampgrid.py
   track.py      tracks, error ellipses, sigma scaling
+  orbit_view.py orbit sketch for the Target tab (two-body fit, Tk canvas)
   precovery.py  the pipeline the GUI and CLI share
   core.py       Rust core with NumPy fallbacks
   device.py     device tiers
@@ -173,7 +174,7 @@ tests/          offline tests; both backends must agree
 
 ## How to cite
 
-Puerto, E. A. (2026). *SpaceRockSuite: a precovery toolkit for asteroids, comets and TNOs* (Version 0.0.1) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.24052320
+Puerto, E. A. (2026). *SpaceRockSuite: a precovery toolkit for asteroids, comets and TNOs* (Version 0.0.2) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.24085303
 
 To cite all versions, use the concept DOI [10.5281/zenodo.24052319](https://doi.org/10.5281/zenodo.24052319). GitHub's "Cite this repository" button reads [CITATION.cff](CITATION.cff).
 

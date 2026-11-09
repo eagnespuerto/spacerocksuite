@@ -123,7 +123,7 @@ def _take_date(s: str) -> Optional[Tuple[float, str]]:
                     rest = rest[len(m2.group(0)) :]
                 else:
                     # HH (stand‑alone hour)
-                    m2 = re.match(r'^\s+(\d{2})(?=\s+\d{1,2}[ :]\d{2})', rest)
+                    m2 = re.match(r'^\s+(\d{2})(?=\s+\d{1,2}[ :]\d{2}[ :])', rest)
                     if m2:
                         h = int(m2.group(1))
                         rest = rest[len(m2.group(0)) :]

@@ -143,49 +143,120 @@ class App:
         return widget
 
     # -------------------------------------------------------------- target
+    SERVICES = [("JPL Horizons  (numbered or designated objects)", "horizons"),
+                ("JPL Scout  (NEOCP objects, with Monte Carlo uncertainty)", "scout"),
+                ("Find_Orb  (fits MPC or your own observations)", "findorb")]
+
     def _tab_target(self, f):
-        f.columnconfigure(1, weight=1)
+        # left: how to get the track; right: orbit sketch of the track
+        pw = ttk.PanedWindow(f, orient="horizontal")
+        pw.pack(fill="both", expand=True)
+        left = ttk.Frame(pw)
+        right = ttk.LabelFrame(pw, text="Orbit (from the track)")
+        pw.add(left, weight=3)
+        pw.add(right, weight=2)
+        left.columnconfigure(0, weight=1)
+
+        src = self.settings["source"]
+        self.v_route = tk.StringVar(value="paste" if src == "ephemeral" else "lookup")
         self.v_target = tk.StringVar(value="2026 ED138")
-        self.v_source = tk.StringVar(value=self.settings["source"])
+        labels = dict((v, k) for k, v in self.SERVICES)
+        self.v_service = tk.StringVar(value=labels.get(src, self.SERVICES[0][0]))
         self.v_start = tk.StringVar(value="1950-01-01")
         self.v_stop = tk.StringVar(value="2003-12-31")
         self.v_step = tk.StringVar(value=str(self.settings["step_days"]))
         self.v_site = tk.StringVar(value=self.settings["site"])
-        self._row(f, 0, "Object (designation, number, name, or NEOCP id)", ttk.Entry(f, textvariable=self.v_target))
-        self._row(f, 1, "Orbit source", ttk.Combobox(f, textvariable=self.v_source, state="readonly",
-                                                    values=["horizons", "scout", "findorb", "ephemeral"]))
-        self._row(f, 2, "Start (UTC, YYYY-MM-DD)", ttk.Entry(f, textvariable=self.v_start))
-        self._row(f, 3, "Stop", ttk.Entry(f, textvariable=self.v_stop))
-        self._row(f, 4, "Step (days)", ttk.Entry(f, textvariable=self.v_step))
-        self._row(f, 5, "Observatory code (500 = geocentre)", ttk.Entry(f, textvariable=self.v_site))
-        b = ttk.Frame(f)
-        b.grid(row=6, column=0, columnspan=2, sticky="w", **PAD)
+
+        ttk.Label(left, text="Object name or designation (also used as the name for a pasted ephemeris)").grid(
+            row=0, column=0, sticky="w", **PAD)
+        ttk.Entry(left, textvariable=self.v_target).grid(row=1, column=0, sticky="we", **PAD)
+
+        # A. look up online
+        fa = ttk.Frame(left)
+        ttk.Radiobutton(left, text="A.  Look it up online", value="lookup", variable=self.v_route).grid(
+            row=2, column=0, sticky="w", padx=6, pady=(10, 0))
+        fa.grid(row=3, column=0, sticky="we", padx=(28, 6))
+        fa.columnconfigure(1, weight=1)
+        cb = ttk.Combobox(fa, textvariable=self.v_service, state="readonly", values=[k for k, _ in self.SERVICES])
+        self._row(fa, 0, "Service", cb)
+        span = ttk.Frame(fa)
+        for i, (lab, var, w) in enumerate((("from", self.v_start, 11), ("to", self.v_stop, 11),
+                                           ("every", self.v_step, 5))):
+            if i:
+                ttk.Label(span, text=lab).pack(side="left", padx=(6, 2))
+            ttk.Entry(span, textvariable=var, width=w).pack(side="left")
+        ttk.Label(span, text="days").pack(side="left", padx=2)
+        self._row(fa, 1, "Dates (UTC)", span)
+        self._row(fa, 2, "Observatory code", ttk.Entry(fa, textvariable=self.v_site, width=8)).grid(sticky="w")
+        ob = ttk.Frame(fa)
+        ttk.Button(ob, text="Use my observations...", command=self.load_obs).pack(side="left")
+        self.l_obs = ttk.Label(ob, text="  none: Find_Orb downloads the MPC's", foreground="#666")
+        self.l_obs.pack(side="left")
+        self._row(fa, 3, "Find_Orb only", ob)
+
+        # B. paste
+        ttk.Radiobutton(left, text="B.  Paste an ephemeris  (Find_Orb / projectpluto, Horizons, MPC, "
+                                   "or time-RA-Dec table)", value="paste", variable=self.v_route).grid(
+            row=4, column=0, sticky="w", padx=6, pady=(10, 0))
+        self.t_ephem = tk.Text(left, height=8, font=("TkFixedFont", 9), wrap="none")
+        self.t_ephem.grid(row=5, column=0, sticky="nsew", padx=(28, 6), pady=4)
+        left.rowconfigure(5, weight=1)
+
+        # picking a section by using it selects its radio button
+        # (clicks and typing only: focus also returns when you switch back from the browser)
+        for w in [cb] + list(fa.winfo_children()) + list(span.winfo_children()):
+            for ev in ("<Button-1>", "<Key>"):
+                w.bind(ev, lambda e: self.v_route.set("lookup"), add="+")
+        cb.bind("<<ComboboxSelected>>", lambda e: self.v_route.set("lookup"), add="+")
+        for ev in ("<Button-1>", "<<Paste>>", "<Key>"):
+            self.t_ephem.bind(ev, lambda e: self.v_route.set("paste"), add="+")
+
+        b = ttk.Frame(left)
+        b.grid(row=6, column=0, sticky="w", **PAD)
         ttk.Button(b, text="Get track", command=self.get_track).pack(side="left", padx=3)
-        ttk.Button(b, text="Load observations (Find_Orb)...", command=self.load_obs).pack(side="left", padx=3)
-        ttk.Button(b, text="Open in Ephemeral", command=self.open_ephemeral).pack(side="left", padx=3)
         ttk.Button(b, text="Save track...", command=self.save_track).pack(side="left", padx=3)
         ttk.Button(b, text="Load track...", command=self.load_track).pack(side="left", padx=3)
-        ttk.Label(f, text="Paste an ephemeris (Horizons, MPC, Find_Orb, 80-column, or time/RA/Dec table) "
-                          "for the 'ephemeral' source:").grid(row=7, column=0, columnspan=2, sticky="w", **PAD)
-        self.t_ephem = tk.Text(f, height=8, font=("TkFixedFont", 9))
-        self.t_ephem.grid(row=8, column=0, columnspan=2, sticky="nsew", **PAD)
-        f.rowconfigure(8, weight=1)
-        self.l_track = ttk.Label(f, text="No track yet.", justify="left")
-        self.l_track.grid(row=9, column=0, columnspan=2, sticky="w", **PAD)
+        ttk.Button(b, text="Open in Ephemeral", command=self.open_ephemeral).pack(side="left", padx=3)
+        self.l_track = ttk.Label(left, text="No track yet.", justify="left")
+        self.l_track.grid(row=7, column=0, sticky="w", **PAD)
+
+        self.orbit_canvas = tk.Canvas(right, highlightthickness=0, width=int(320 * self.k), height=int(320 * self.k))
+        self.orbit_canvas.pack(fill="both", expand=True)
+        self._orbit = {"error": "Get a track to see its orbit here."}
+        self.orbit_canvas.bind("<Configure>", lambda e: self._draw_orbit())
+
+    def _draw_orbit(self):
+        from .. import orbit_view
+        orbit_view.draw(self.orbit_canvas, self._orbit)
 
     def get_track(self):
         from .. import precovery as P
+        paste = self.v_route.get() == "paste"
+        text = self.t_ephem.get("1.0", "end").strip()
+        if paste and not text:
+            messagebox.showinfo(APP_NAME, "Paste an ephemeris into box B first, or choose A to look it up online.")
+            return
+        try:
+            step = float(self.v_step.get())
+        except ValueError:
+            messagebox.showinfo(APP_NAME, "The step must be a number of days, e.g. 1 or 0.25.")
+            return
+        service = dict(self.SERVICES).get(self.v_service.get(), "horizons")
         a = dict(target=self.v_target.get().strip(), start=self.v_start.get(), stop=self.v_stop.get(),
-                 source=self.v_source.get(), step_days=float(self.v_step.get()), site=self.v_site.get().strip(),
-                 obs80=self.obs80, ephem_text=self.t_ephem.get("1.0", "end").strip() or None,
+                 source="ephemeral" if paste else service, step_days=step, site=self.v_site.get().strip(),
+                 obs80=self.obs80, ephem_text=text or None,
                  findorb_binary=self.settings.get("findorb_binary") or None, progress=self.worker.progress)
-        self.worker.run(f"Getting track from {a['source']}", lambda: P.get_track(**a), self._got_track)
+        label = "the pasted ephemeris" if paste else self.v_service.get().split("  ")[0]
+        self.worker.run(f"Getting track from {label}", lambda: P.get_track(**a), self._got_track)
 
     def _got_track(self, t):
         import numpy as np
+        from .. import orbit_view
         from ..precovery import iso
         self.track = t
-        s = f"{t.name}: {len(t)} rows from {t.source}, {iso(t.jd[0])} to {iso(t.jd[-1])}"
+        fmt = t.meta.get("format")
+        s = f"{t.name}: {len(t)} rows from {t.source}{f' ({fmt})' if fmt else ''}, " \
+            f"{iso(t.jd[0])[:16]} to {iso(t.jd[-1])[:16]}"
         if t.smaa is not None:
             a, _, _ = t.ellipse(t.jd, 3)
             s += f"\n3-sigma major axis: {np.nanmin(a):.1f}\" to {np.nanmax(a):.1f}\""
@@ -193,12 +264,20 @@ class App:
             s += f"\nPredicted V: {np.nanmin(t.vmag):.1f} to {np.nanmax(t.vmag):.1f}"
         self.l_track.config(text=s)
         self.log(s.replace("\n", "; "))
+        try:
+            self._orbit = orbit_view.build(t)
+        except Exception as e:  # the sketch is a bonus; never block the track
+            self._orbit = {"error": f"Could not draw the orbit: {e}"}
+        self._draw_orbit()
 
     def load_obs(self):
+        self.v_route.set("lookup")
         p = filedialog.askopenfilename(title="MPC 80-column or ADES observations")
         if p:
             self.obs80 = open(p, encoding="utf-8", errors="replace").read()
-            self.log(f"Loaded {len(self.obs80.splitlines())} observation lines from {os.path.basename(p)}")
+            n = len(self.obs80.splitlines())
+            self.l_obs.config(text=f"  {os.path.basename(p)} ({n} lines)")
+            self.log(f"Loaded {n} observation lines from {os.path.basename(p)}")
 
     def open_ephemeral(self):
         if not self._need_track():

@@ -46,8 +46,8 @@ def local_binary(configured: str | None = None) -> str | None:
 
 def parse_table(text: str) -> dict:
     """Rows from a Find_Orb ephemeris table -> dict of arrays."""
-    hdr = next((l for l in text.splitlines() if l.startswith("Date") and "RA" in l), "")
-    has_sig = '" sig' in hdr or "sig PA" in hdr
+    hdr = next((l.strip() for l in text.splitlines() if l.lstrip().startswith("Date") and "RA" in l), "")
+    has_sig = "sig" in hdr.split()
     has_mag = " mag" in hdr
     out = {k: [] for k in ("jd", "ra", "dec", "delta", "mag", "sig", "pa")}
     for line in text.splitlines():

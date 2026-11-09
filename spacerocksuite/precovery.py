@@ -28,6 +28,14 @@ def iso(j: float) -> str:
 
 
 # ------------------------------------------------------------------ tracks
+def looks_like_neocp(target: str) -> bool:
+    """NEOCP temporary ids: 7 letters/digits, no space, not a plain number (e.g. P12rWvN, ZTF0ABC)."""
+    import re
+    t = target.strip()
+    return bool(re.fullmatch(r"[A-Za-z0-9]{5,7}", t)) and not t.isdigit() and \
+        re.fullmatch(r"[A-Za-z]+", t) is None
+
+
 def get_track(target: str, start: str, stop: str, source: str = "horizons", step_days: float = 1.0,
               site: str = "500", obs80: str | None = None, ephem_text: str | None = None,
               findorb_binary: str | None = None, progress=None) -> Track:
@@ -35,7 +43,13 @@ def get_track(target: str, start: str, stop: str, source: str = "horizons", step
     j0, j1 = jd(start), jd(stop)
     if source == "horizons":
         from .services import horizons
-        return horizons.ephemeris_long(target, j0, j1, step_days, site, progress)
+        try:
+            return horizons.ephemeris_long(target, j0, j1, step_days, site, progress)
+        except ValueError as e:
+            if looks_like_neocp(target):
+                raise ValueError(f"Horizons does not know NEOCP objects like {target!r}. Choose JPL Scout "
+                                 "or Find_Orb, or paste a Find_Orb ephemeris from projectpluto.") from e
+            raise
     if source == "scout":
         from .services import scout, mpc
         t = scout.track(target, np.arange(j0, j1 + step_days / 2, step_days))
