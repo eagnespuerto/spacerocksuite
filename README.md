@@ -174,7 +174,7 @@ tests/          offline tests; both backends must agree
 
 ## How to cite
 
-Puerto, E. A. (2026). *SpaceRockSuite: a precovery toolkit for asteroids, comets and TNOs* (Version 0.0.2) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.24085303
+Puerto, E. A. (2026). *SpaceRockSuite: a precovery toolkit for asteroids, comets and TNOs* (Version 0.0.3) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.24085995
 
 To cite all versions, use the concept DOI [10.5281/zenodo.24052319](https://doi.org/10.5281/zenodo.24052319). GitHub's "Cite this repository" button reads [CITATION.cff](CITATION.cff).
 
