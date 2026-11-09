@@ -107,6 +107,10 @@ def cmd_stack(a):
     from .imaging import stack as S
     t = _track(a.track)
     frames = [S.Frame.from_fits(p, name=os.path.basename(p)) for p in a.frames]
+    try:
+        frames = S.usable_frames(frames, t, a.mode)
+    except S.NoCoverage as e:
+        raise SystemExit(f"Nothing to stack. {e}")
     res = S.stack(frames, t, a.mode, a.size, a.scale, a.method, bkg_size=a.bkg or None)
     noise, _ = S.control_noise(frames, t, a.mode, size_px=a.size, scale_arcsec=a.scale, method=a.method,
                                r_px=a.r)

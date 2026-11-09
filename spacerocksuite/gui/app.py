@@ -464,6 +464,14 @@ class App:
             for k, p in enumerate(paths):
                 fr.append(S.Frame.from_fits(p, name=os.path.basename(p)))
                 self.worker.progress(0.3 * (k + 1) / len(paths))
+            self.worker.log(f"Checking {len(fr)} frames against the prediction for {self.track.name}:")
+            try:
+                fr = S.usable_frames(fr, self.track, mode, float(self.v_sigma.get()), log=self.worker.log)
+            except S.NoCoverage as e:
+                self.worker.log(f"Nothing to stack. {e}")
+                return None
+            if len(fr) < len(paths):
+                self.worker.log(f"  stacking the {len(fr)} frame(s) that contain the prediction")
             kw = dict(size_px=size, scale_arcsec=scale, method=method, bkg_size=bkg or None)
             res = S.stack(fr, self.track, mode, **kw)
             img = res["stack"]
