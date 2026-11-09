@@ -7,16 +7,16 @@ authors:
     given-names: Ella Agnes
     orcid: "https://orcid.org/0009-0005-1624-2025"
     affiliation: "Independent Researcher, Manila, Philippines"
-version: 0.0.1
-date-released: 2026-11-08
+version: 0.0.2
+date-released: 2026-11-09
 doi: 10.5281/zenodo.24052319
 identifiers:
   - type: doi
     value: 10.5281/zenodo.24052319
     description: Concept DOI (all versions)
   - type: doi
-    value: 10.5281/zenodo.24052320
-    description: Version 0.0.1
+    value: 10.5281/zenodo.24085303
+    description: Version 0.0.2
 repository-code: "https://github.com/eagnespuerto/spacerocksuite"
 license: MIT
 keywords:

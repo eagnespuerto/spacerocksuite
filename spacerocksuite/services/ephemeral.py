@@ -18,7 +18,30 @@ from ..track import Track
 SITE = "https://eagnespuerto.github.io/ephemeral/"
 
 
+def _findorb_name(text: str) -> str | None:
+    """Name from Find_Orb's 'Ephemerides for (809) ... : 2026 ED138:' line."""
+    for line in text.splitlines():
+        if line.startswith("Ephemerides for "):
+            parts = [p.strip() for p in line.rstrip().rstrip(":").split(":")]
+            if len(parts) >= 2 and parts[-1] and "(" not in parts[-1]:
+                return parts[-1]
+    return None
+
+
+def is_findorb(text: str) -> bool:
+    return any(l.lstrip().startswith("Date (UTC)") and " RA " in l for l in text.splitlines())
+
+
 def track_from_text(text: str, name: str | None = None) -> Track:
+    if is_findorb(text):
+        # Find_Orb table (projectpluto web page or console fo): keep its sigma, PA and mag
+        from .findorb import parse_table
+        c = parse_table(text)
+        sig = None if np.all(np.isnan(c["sig"])) else c["sig"]
+        return Track(name or _findorb_name(text) or "object", "ephemeral", c["jd"], c["ra"], c["dec"],
+                     None if np.all(np.isnan(c["mag"])) else c["mag"],
+                     None if np.all(np.isnan(c["delta"])) else c["delta"],
+                     sig, sig, c["pa"] if sig is not None else None, meta={"format": "Find_Orb"})
     d = parse(text)
     rows = d["rows"]
     if not rows:
