@@ -193,3 +193,44 @@ def test_horizons_live():
     from spacerocksuite.services import horizons
     t = horizons.ephemeris("2026 ED138", "1982-03-18", "1982-03-20", "1 d")
     assert len(t) == 3 and t.smaa is not None
+
+
+def _frames_at(ra0, dec0, jd, n=100, scale=1.0):
+    from spacerocksuite.imaging import stack as S
+    rng = np.random.default_rng(2)
+    return [S.Frame(rng.normal(0, 1, (n, n)).astype(np.float32), _wcs(ra0, dec0, scale, n), j, name=f"f{k}")
+            for k, j in enumerate(jd)]
+
+
+def test_stack_off_frame_says_why_instead_of_zero():
+    # NEOSSat survey frames that miss the prediction used to give "flux 0, noise 0, S/N nan"
+    from spacerocksuite.imaging import stack as S
+    jd = 2450000 + np.arange(4) * 0.003
+    tr = Track("far", "test", jd, np.full(4, 150.0), np.full(4, 10.0))
+    frames = _frames_at(150.5, 10.0, jd)                    # 30' east of the prediction, 100" wide
+    log = []
+    with pytest.raises(S.NoCoverage, match="not on any of the 4 frames"):
+        S.usable_frames(frames, tr, "track", log=log.append)
+    assert sum("outside this frame" in l for l in log) == 4
+    rep = S.check_frames(frames, tr)
+    assert rep[0]["off_arcmin"] == pytest.approx(30 * np.cos(np.radians(10)) - 50 / 60, abs=0.1)
+    res = S.stack(frames, tr, "track", size_px=21, scale_arcsec=1.0, method="mean")
+    flux, n = S.photometry(res["stack"], 3)
+    assert n == 0 and np.isnan(flux)                         # no data is not zero flux
+
+
+def test_stack_keeps_only_frames_with_the_prediction():
+    from spacerocksuite.imaging import stack as S
+    jd = 2450000 + np.arange(3) * 0.003
+    tr = Track("t", "test", jd, np.full(3, 150.0), np.full(3, 10.0))
+    frames = _frames_at(150.0, 10.0, jd[:2]) + _frames_at(151.0, 10.0, jd[2:])
+    keep = S.usable_frames(frames, tr, "track", log=lambda s: None)
+    assert [f.jd_mid for f in keep] == list(jd[:2])
+
+
+def test_stack_frame_outside_track_time():
+    from spacerocksuite.imaging import stack as S
+    tr = Track("t", "test", np.array([2450000.0, 2450001.0]), np.full(2, 150.0), np.full(2, 10.0))
+    frames = _frames_at(150.0, 10.0, [2450005.0])
+    with pytest.raises(S.NoCoverage, match="outside the track"):
+        S.usable_frames(frames, tr, "track", log=lambda s: None)

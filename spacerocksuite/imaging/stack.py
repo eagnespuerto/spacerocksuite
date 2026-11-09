@@ -137,6 +137,73 @@ def _centres(frames, track, mode, rate=None, ref_jd=None, offset=(0.0, 0.0)):
     return ra, dec
 
 
+class NoCoverage(ValueError):
+    """No frame contains the predicted position."""
+
+
+def check_frames(frames, track, mode="track", nsigma=3.0):
+    """Where the predicted position falls on each frame.
+
+    Returns one dict per frame: name, jd, x, y (pixels), on (prediction inside
+    the frame), off_arcmin (distance from the frame edge when it is outside),
+    in_span (frame time inside the track's time range), ell_arcmin (n-sigma
+    semi-major axis) and vmag.
+    """
+    ra, dec = _centres(frames, track, mode)
+    jd = np.array([f.jd_mid for f in frames])
+    _, _, vmag, *_ = track.at(jd)
+    a, _, _ = track.ellipse(jd, nsigma)
+    out = []
+    for k, f in enumerate(frames):
+        H, W = f.data.shape[-2:]
+        x, y = (float(v) for v in f.wcs.all_world2pix(ra[k], dec[k], 0))
+        ok = np.isfinite(x) and np.isfinite(y)
+        on = ok and -0.5 <= x <= W - 0.5 and -0.5 <= y <= H - 0.5
+        off = 0.0
+        if ok and not on:  # sky distance to the nearest point on the frame
+            ex, ey = min(max(x, 0), W - 1), min(max(y, 0), H - 1)
+            r2, d2 = f.wcs.all_pix2world(ex, ey, 0)
+            from ..track import sep_deg
+            off = float(sep_deg(ra[k], dec[k], float(r2), float(d2))) * 60
+        out.append({"name": f.name or f"frame {k + 1}", "jd": float(jd[k]), "x": x, "y": y, "on": bool(on),
+                    "off_arcmin": off if ok else float("inf"),
+                    "in_span": bool(track.jd[0] - 1e-6 <= jd[k] <= track.jd[-1] + 1e-6),
+                    "ell_arcmin": float(np.atleast_1d(a)[k]) / 60,
+                    "vmag": None if vmag is None else float(np.atleast_1d(vmag)[k])})
+    return out
+
+
+def usable_frames(frames, track, mode="track", nsigma=3.0, log=print):
+    """Frames whose predicted position is on the image; logs why others are dropped.
+
+    Raises NoCoverage, with a plain explanation, when none are left.
+    """
+    rep = check_frames(frames, track, mode, nsigma)
+    keep = []
+    for f, r in zip(frames, rep):
+        if not r["in_span"]:
+            log(f"  {r['name']}: frame time is outside the track ({track.jd[0]:.2f}-{track.jd[-1]:.2f} JD); "
+                "get a track that covers it")
+        elif not r["on"]:
+            log(f"  {r['name']}: prediction is {r['off_arcmin']:.1f}' outside this frame, skipped")
+        else:
+            keep.append(f)
+    v = [r["vmag"] for r in rep if r["vmag"] is not None and np.isfinite(r["vmag"])]
+    ell = max(r["ell_arcmin"] for r in rep)
+    log(f"  prediction: {nsigma:g}-sigma ellipse up to {ell:.1f}'" + (f", predicted V {min(v):.1f}" if v else ""))
+    if not keep:
+        near = min(rep, key=lambda r: r["off_arcmin"])
+        msg = (f"The predicted position is not on any of the {len(frames)} frames "
+               f"(nearest: {near['off_arcmin']:.1f}' outside {near['name']}).")
+        if not all(r["in_span"] for r in rep):
+            msg += " Some frame times are outside the track; get a track that covers them."
+        elif ell > near["off_arcmin"]:
+            msg += (f" The {nsigma:g}-sigma ellipse ({ell:.1f}') reaches these frames, but a stack is centred on "
+                    "the prediction, so they cannot be stacked on it.")
+        raise NoCoverage(msg)
+    return keep
+
+
 def stack(frames, track, mode="track", size_px=None, scale_arcsec=1.0, method="clipmean",
           rate=None, ref_jd=None, bkg_size=None, templates=None, offset=(0.0, 0.0)):
     """Resample every frame onto the stamp grid and combine.
@@ -171,8 +238,11 @@ def photometry(img, r_px, ann=(2.0, 3.5)):
     d = np.hypot(xx - c[0], yy - c[1])
     ap = d <= r_px
     an = (d >= ann[0] * r_px) & (d <= ann[1] * r_px)
+    n = int(np.isfinite(img[ap]).sum())
+    if n == 0 or not np.isfinite(img[an]).any():   # no data at the prediction: not a zero flux
+        return float("nan"), n
     sky = np.nanmedian(img[an])
-    return float(np.nansum(img[ap] - sky)), int(np.isfinite(img[ap]).sum())
+    return float(np.nansum(img[ap] - sky)), n
 
 
 def control_noise(frames, track, mode, n_controls=8, sep_arcsec=None, r_px=3.0, **kw):
@@ -186,7 +256,8 @@ def control_noise(frames, track, mode, n_controls=8, sep_arcsec=None, r_px=3.0, 
         res = stack(frames, track, mode, offset=(sep * math.cos(a), sep * math.sin(a)), **kw)
         fl.append(photometry(res["stack"], r_px)[0])
     fl = np.array(fl)
-    return float(np.std(fl, ddof=1)) if len(fl) > 2 else float("nan"), fl
+    ok = fl[np.isfinite(fl)]                       # controls off the frame edge carry no data
+    return float(np.std(ok, ddof=1)) if len(ok) > 2 else float("nan"), fl
 
 
 def null_tests(frames, track, r_px=3.0, **kw):
